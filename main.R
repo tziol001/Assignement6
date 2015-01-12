@@ -1,3 +1,8 @@
+# Name: Nikoula, Latifah & Nikos
+# Date: 9 January 2015
+
+rm(list=ls()) # clear the workspace
+
 # Required packages and functions
 lib <- c("raster", "rgdal")
 sapply(lib, function(...) require(..., character.only = TRUE))
