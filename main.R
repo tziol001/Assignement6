@@ -11,6 +11,7 @@ getwd()# make sure the data directory
 
 # call the functions
 source('R/unzipURL.R')
+source('R/greenestPlace.R')
 
 # Select the url links that you want to download 
 URL <- c("https://github.com/GeoScripting-WUR/VectorRaster/raw/gh-pages/data/MODIS.zip")
@@ -19,43 +20,44 @@ URL <- c("https://github.com/GeoScripting-WUR/VectorRaster/raw/gh-pages/data/MOD
 unzipURL(URL)
 cities <- getData('GADM',country='NLD', path='data/',level=3)
 
-#process modis data
+# process modis data
 MODISpath <- list.files('data/url',pattern = glob2rx('*.grd'), full.names = TRUE)
 modis<-brick(MODISpath)
-modis<-modis/10000 # convert the values in ndvi scale
+modis<-modis/10000 #ndvi scale from 0 to 1
 
 # reprojection
 cities_proj <- spTransform(cities, CRS(proj4string(modis)))
 
+# extract the ndvi values for each city
 ex_ndvi<- extract(modis, cities_proj, fun=mean, sp=TRUE, na.rm= TRUE)
 
-# plot
-spplot(ex_ndvi, zcol = 'January', col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(50))
-
-#calib <- cbind(cities$NAME_2, ex_ndvi)
+# converted into data frame for faster computations
 cal<-as.data.frame(ex_ndvi)
 
-#make the subset of the annual ndvi
+# make the subset of the annual ndvi
 cal$annual <- rowMeans(cal[,15:26], na.rm = FALSE)
 
-#find the greeness city
+# find the greeness city for several months by using the greenestPlace function. 
+gr_january<-greenestPlace(cal, "January", "NAME_2")
+gr_august<-greenestPlace(cal, "August", "NAME_2")
+gr_annual<-greenestPlace(cal, "annual", "NAME_2")
 
-gr_january<-findcity(cal, "January")
-gr_august<-findcity(cal, "August")
-gr_annual<-findcity(cal, "annual")
+# aggregate the provinces for specific months
+months<-c('January','August')
+agr_ndvi<-aggregate(ex_ndvi, vars='NAME_1', sums=list(list(mean, months)))
 
-#spplot results in one composite image.
-p1=spplot(ex_ndvi, zcol = 'January',main=paste("The greenest city of January is", gr_january), col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(50))
+# select greenest province for a specific month
+cal2<-as.data.frame(agr_ndvi) #convert to data frame
+agr_january<-greenestPlace(cal2, "January", "NAME_1") # select the greenest province for January. The selection of province level is done by NAME_1.
 
-p2=spplot(ex_ndvi, zcol = 'August',main=paste("The greenest city of August is", gr_august), col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(50))
+# display some results
+# spplot results in one composite image.
+p1=spplot(ex_ndvi, zcol = 'January',main=paste("The greenest city of January is", gr_january), col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(100))
 
-p3=spplot(ex_ndvi, zcol = 'annual',main=paste("The greenest city of complete year is", gr_annual), col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(50))
+p2=spplot(agr_ndvi, zcol = 'January',main=paste("The greenest province of January is", agr_january), col.regions = colorRampPalette(c('lightgreen', 'darkgreen'))(100))
 
 print(p1, position = c(0,.5,.5,1),more=T)
 print(p2, position = c(.5,.5,1,1),more = T)
-print(p3, position = c(0,0,1,.5))
 
-# aggregate
-provinces <-aggregate(cal,list(cal$NAME_1),FUN=mean, na.rm=TRUE)
-
-pr<-aggregate(ex_ndvi, fact=2, fun=mean, expand=TRUE, na.rm=TRUE,)
+# write down the name of the calculated greenest cities as one comment
+print(paste("The cities that have the highest average value of NDVI during the January and August are", gr_january,"and", gr_august,",respectively. On average over the year", gr_annual, "can be characterized as the greenest city."))
