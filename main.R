@@ -1,4 +1,4 @@
-# Name: Nikoula, Latifah & Nikos
+# Name: Nikoula, Latifah & Nikos 
 # Date: 12 January 2015
 
 rm(list=ls()) # clear the workspace
