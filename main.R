@@ -32,23 +32,23 @@ cities_proj <- spTransform(cities, CRS(proj4string(modis)))
 ex_ndvi<- extract(modis, cities_proj, fun=mean, sp=TRUE, na.rm= TRUE)
 
 # converted into data frame for faster computations
-cal<-as.data.frame(ex_ndvi)
+ndvi.df<-as.data.frame(ex_ndvi)
 
 # make the subset of the annual ndvi
-cal$annual <- rowMeans(cal[,15:26], na.rm = FALSE)
+ndvi.df$annual <- rowMeans(ndvi.df[,15:26], na.rm = FALSE)
 
 # find the greeness city for several months by using the greenestPlace function. 
-gr_january<-greenestPlace(cal, "January", "NAME_2")
-gr_august<-greenestPlace(cal, "August", "NAME_2")
-gr_annual<-greenestPlace(cal, "annual", "NAME_2")
+gr_january<-greenestPlace(ndvi.df, "January", "NAME_2")
+gr_august<-greenestPlace(ndvi.df, "August", "NAME_2")
+gr_annual<-greenestPlace(ndvi.df, "annual", "NAME_2")
 
 # aggregate the provinces for specific months
 months<-c('January','August')
 agr_ndvi<-aggregate(ex_ndvi, vars='NAME_1', sums=list(list(mean, months)))
 
 # select greenest province for a specific month
-cal2<-as.data.frame(agr_ndvi) #convert to data frame
-agr_january<-greenestPlace(cal2, "January", "NAME_1") # select the greenest province for January. The selection of province level is done by NAME_1.
+agr_ndvi.df<-as.data.frame(agr_ndvi) #convert to data frame
+agr_january<-greenestPlace(agr_ndvi.df, "January", "NAME_1") # select the greenest province for January. The selection of province level is done by NAME_1.
 
 # display some results
 # spplot results in one composite image.
